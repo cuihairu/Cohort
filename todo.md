@@ -45,3 +45,15 @@
 - [ ] 把 `docs/spec.md` 定稿为“第一版可实现规格”（根据你确认的取舍：权威状态同步 vs 输入帧广播）
 - [ ] 增加 `docs/protocol.md`（协议字段与示例）
 - [ ] 增加 `docs/ops.md`（部署与参数调优：tick/inputDelay/maxEvents 等）
+
+## 6. 文档站（VuePress）
+
+- [x] 建立 VuePress 文档站（`docs/.vuepress` + `npm run docs:build`）
+- [x] 整理架构/帧同步/旧服分析文档到 `docs/`
+- [x] GitHub Pages 自动部署（`docs.yml`）
+
+## 7. CI / 覆盖率 / 发布
+
+- [x] CI：build + test（`ci.yml`）
+- [x] 覆盖率上传（Codecov）
+- [x] Tag 自动 Release（`release.yml`）

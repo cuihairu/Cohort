@@ -41,6 +41,16 @@ ScaffoldingReadMe.txt
 *~
 CodeCoverage/
 
+# Node / VuePress
+node_modules/
+.pnpm-store/
+docs/.vuepress/.cache/
+docs/.vuepress/.temp/
+docs/.vuepress/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # MSBuild Binary and Structured Log
 *.binlog
 
