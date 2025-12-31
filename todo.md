@@ -34,6 +34,14 @@
 - [ ] 多客户端订阅同一 `Match` 的状态（两个主播客户端看到同一局）
 - [ ] “观众加入阵营”的通用规则接口（弹幕口令/礼物映射）
 
+## 3.5 通信与部署模式
+
+- [ ] 抽象 `MessageBus/ActorRef/Router`（支持 Monolith 与拆分）
+- [x] 提供 InProc bus（进程内）
+- [x] 提供 NamedPipe bus（本机 IPC 示例）
+- [ ] 提供 TCP/HTTP transport（localhost / 远程）
+- [ ] 评估并规划共享内存 transport（MemoryMappedFile + FlatBuffers）
+
 ## 4. 可观测性与压测
 
 - [ ] 指标：tick 耗时、事件数、丢弃/合并数、ack 延迟、落后 tick

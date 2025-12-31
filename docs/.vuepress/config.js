@@ -16,6 +16,7 @@ module.exports = {
       "/design/": [
         "/design/architecture.md",
         "/design/frame-sync.md",
+        "/design/ipc.md",
         "/design/spec.md",
         "/design/legacy-real-server-analysis.md"
       ],
@@ -24,4 +25,3 @@ module.exports = {
   },
   plugins: ["mermaidjs"]
 };
-
