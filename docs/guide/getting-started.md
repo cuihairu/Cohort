@@ -15,16 +15,16 @@ title: 快速开始
 dotnet run --project src/Cohort.Server
 ```
 
-服务默认监听 `http://localhost:5000`：
+服务端口取决于 `src/Cohort.Server/Properties/launchSettings.json`（默认类似 `http://localhost:5083`，也可用 `ASPNETCORE_URLS` 覆盖）：
 
 - `GET /health`：健康检查
 - `GET /sessions`：会话/客户端指标
-- `POST /ingress/test`：注入测试事件（模拟平台事件）
+- `POST /ingress/{platform}`：注入测试事件（模拟平台事件，`test` 为示例）
 - `WS /ws`：主播客户端连接入口
 
 ## WebSocket：连接与收快照
 
-连接：`ws://localhost:5000/ws`
+连接：`ws://localhost:<serverPort>/ws`
 
 第一条消息必须发送 `hello`：
 
@@ -45,7 +45,7 @@ dotnet run --project src/Cohort.Server
 ## 注入测试事件（模拟平台）
 
 ```bash
-curl -X POST http://localhost:5000/ingress/test \
+curl -X POST http://localhost:<serverPort>/ingress/test \
   -H 'content-type: application/json' \
   -d '{"sessionId":"<sessionId>","platform":"test","userId":"u1","kind":"Like"}'
 

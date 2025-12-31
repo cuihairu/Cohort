@@ -39,8 +39,15 @@
 - [ ] 抽象 `MessageBus/ActorRef/Router`（支持 Monolith 与拆分）
 - [x] 提供 InProc bus（进程内）
 - [x] 提供 NamedPipe bus（本机 IPC 示例）
+- [x] 提供 Unix Domain Socket bus（本机 IPC 示例）
 - [ ] 提供 TCP/HTTP transport（localhost / 远程）
 - [ ] 评估并规划共享内存 transport（MemoryMappedFile + FlatBuffers）
+
+## 3.6 拆分模式（Gateway + EngineHost）
+
+- [x] 新增 `Cohort.Gateway` 与 `Cohort.EngineHost` 两个进程
+- [x] IPC 双向通道（Gateway->Engine 命令，Engine->Gateway 快照）
+- [ ] 把会话参数从 EngineHost 下发到 Gateway（避免两边配置漂移）
 
 ## 4. 可观测性与压测
 

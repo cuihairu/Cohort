@@ -12,7 +12,7 @@ module.exports = {
       { text: "参考", link: "/reference/protocol.html" }
     ],
     sidebar: {
-      "/guide/": ["/guide/getting-started.md"],
+      "/guide/": ["/guide/getting-started.md", "/guide/split-mode.md"],
       "/design/": [
         "/design/architecture.md",
         "/design/frame-sync.md",

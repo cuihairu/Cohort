@@ -29,9 +29,19 @@
 dotnet run --project src/Cohort.Server
 ```
 
-- HTTP：`http://localhost:5000`
-- WS：`ws://localhost:5000/ws`
+- HTTP：端口见 `src/Cohort.Server/Properties/launchSettings.json`（默认类似 `http://localhost:5083`）
+- WS：`ws://localhost:<serverPort>/ws`
 - 指标：`GET /sessions`
+
+## 拆分模式（Gateway + EngineHost）
+
+```bash
+dotnet run --project src/Cohort.EngineHost
+dotnet run --project src/Cohort.Gateway
+```
+
+- Gateway：对外提供 `/ws` 与 `/ingress/{platform}`
+- EngineHost：运行权威 tick + 快照，通过本机 IPC 与 Gateway 通信（优先 UDS，失败降级 NamedPipe）
 
 ## 架构概览
 
