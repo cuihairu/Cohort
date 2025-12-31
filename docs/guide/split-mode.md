@@ -36,7 +36,7 @@ Gateway 会启动 IPC server：`Engine -> Gateway`（事件通道），并作为
 {"type":"hello"}
 ```
 
-之后会收到 `welcome`，并持续收到 `snapshot`。
+之后会收到 `welcome`（由 EngineHost 下发的权威 tick 参数），并持续收到 `snapshot`。
 
 ## 4) 注入测试事件（模拟平台）
 

@@ -47,7 +47,7 @@
 
 - [x] 新增 `Cohort.Gateway` 与 `Cohort.EngineHost` 两个进程
 - [x] IPC 双向通道（Gateway->Engine 命令，Engine->Gateway 快照）
-- [ ] 把会话参数从 EngineHost 下发到 Gateway（避免两边配置漂移）
+- [x] 把会话参数从 EngineHost 下发到 Gateway（避免两边配置漂移）
 
 ## 4. 可观测性与压测
 

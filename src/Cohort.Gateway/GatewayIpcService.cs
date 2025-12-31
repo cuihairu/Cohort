@@ -11,6 +11,7 @@ public sealed class GatewayIpcService : BackgroundService
     private readonly IConfiguration _config;
 
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, GatewayClientConnection>> _clientsBySession = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<ServerWelcome>> _pendingWelcomes = new(StringComparer.Ordinal);
 
     private IMessageBus? _incoming;
     private IMessageBus? _outgoing;
@@ -26,6 +27,26 @@ public sealed class GatewayIpcService : BackgroundService
             UnixSocketDir: _config["Ipc:UnixSocketDir"] ?? "/tmp/cohort",
             NamedPipePrefix: _config["Ipc:NamedPipePrefix"] ?? "cohort"
         );
+    }
+
+    public Task<ServerWelcome> CreateWelcomeWaiter(string sessionId, string clientId, CancellationToken cancellationToken)
+    {
+        var key = $"{sessionId}|{clientId}";
+        var tcs = new TaskCompletionSource<ServerWelcome>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_pendingWelcomes.TryAdd(key, tcs))
+        {
+            throw new InvalidOperationException("Welcome waiter already exists.");
+        }
+
+        cancellationToken.Register(() =>
+        {
+            if (_pendingWelcomes.TryRemove(key, out var removed))
+            {
+                removed.TrySetCanceled(cancellationToken);
+            }
+        });
+
+        return tcs.Task;
     }
 
     public async ValueTask RegisterClientAsync(GatewayClientConnection conn, CancellationToken cancellationToken)
@@ -96,7 +117,23 @@ public sealed class GatewayIpcService : BackgroundService
 
         await foreach (var env in _incoming.SubscribeAsync(stoppingToken))
         {
-            if (env.Type == IpcMessageTypes.EngineSnapshot)
+            if (env.Type == IpcMessageTypes.EngineWelcome)
+            {
+                try
+                {
+                    var welcome = EnvelopeFactory.DeserializeBody<ServerWelcome>(env);
+                    var key = $"{welcome.SessionId}|{welcome.ClientId}";
+                    if (_pendingWelcomes.TryRemove(key, out var tcs))
+                    {
+                        tcs.TrySetResult(welcome);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to handle engine welcome session={SessionId}", env.SessionId);
+                }
+            }
+            else if (env.Type == IpcMessageTypes.EngineSnapshot)
             {
                 try
                 {
@@ -135,6 +172,14 @@ public sealed class GatewayIpcService : BackgroundService
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
+        foreach (var key in _pendingWelcomes.Keys)
+        {
+            if (_pendingWelcomes.TryRemove(key, out var tcs))
+            {
+                tcs.TrySetCanceled(cancellationToken);
+            }
+        }
+
         if (_incoming != null) await _incoming.DisposeAsync();
         if (_outgoing != null) await _outgoing.DisposeAsync();
         await base.StopAsync(cancellationToken);

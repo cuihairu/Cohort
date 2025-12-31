@@ -8,5 +8,5 @@ public static class IpcMessageTypes
     public const string GatewayAudienceEvent = "gw.audienceEvent";
 
     public const string EngineSnapshot = "eng.snapshot";
+    public const string EngineWelcome = "eng.welcome";
 }
-

@@ -3,6 +3,7 @@ using Cohort.Engine.Session;
 using Cohort.Messaging;
 using Cohort.Messaging.Ipc;
 using Cohort.Protocol.Models;
+using Cohort.Protocol.Messages;
 
 namespace Cohort.EngineHost;
 
@@ -89,6 +90,19 @@ public sealed class EngineIpcService : BackgroundService
                     var client = new EngineBusSessionClient(_outgoing, cmd.SessionId, cmd.ClientId);
                     _clients[(cmd.SessionId, cmd.ClientId)] = client;
                     await session.AddClientAsync(client);
+
+                    var welcome = new ServerWelcome(
+                        Type: Cohort.Protocol.ProtocolTypes.Welcome,
+                        SessionId: cmd.SessionId,
+                        ClientId: cmd.ClientId,
+                        TickDurationMs: _sessionConfig.TickDurationMs,
+                        InputDelayTicks: _sessionConfig.InputDelayTicks,
+                        SnapshotEveryTicks: _sessionConfig.SnapshotEveryTicks,
+                        ServerTimeMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    );
+                    await _outgoing.PublishAsync(
+                        EnvelopeFactory.Create(IpcMessageTypes.EngineWelcome, cmd.SessionId, welcome),
+                        cancellationToken);
                 }
                 break;
 
@@ -138,4 +152,3 @@ public sealed class EngineIpcService : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 }
-
