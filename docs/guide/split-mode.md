@@ -8,7 +8,7 @@ title: 拆分模式（Gateway + EngineHost）
 
 - `Cohort.Gateway`：对外提供 WebSocket `/ws` 与平台入口 `/ingress/{platform}`
 - `Cohort.EngineHost`：仅运行权威 tick + 状态快照（SessionActor + GameModule）
-- 两者通过本机 IPC 通信（优先 UDS，失败时降级 NamedPipe）
+- 两者通过本机 IPC 通信（默认：优先 UDS，失败时降级 NamedPipe；可选：TCP）
 
 ## 1) 启动 EngineHost
 
@@ -50,6 +50,11 @@ curl -X POST http://localhost:5168/ingress/test \
 
 两边都支持以下配置（见各自 `appsettings.json`）：
 
-- `Ipc:Transport`: `Auto|UnixDomainSocket|NamedPipe`
+- `Ipc:Transport`: `Auto|UnixDomainSocket|NamedPipe|Tcp`
 - `Ipc:UnixSocketDir`: 默认 `/tmp/cohort`
 - `Ipc:NamedPipePrefix`: 默认 `cohort`
+- `Ipc:TcpHost`: 默认 `127.0.0.1`
+- `Ipc:TcpGatewayToEnginePort`: 默认 `27500`
+- `Ipc:TcpEngineToGatewayPort`: 默认 `27501`
+
+如果要把 Gateway/EngineHost 拆到两个容器里，通常会把 `Ipc:Transport` 设为 `Tcp`，并为上述两个端口做容器端口映射。

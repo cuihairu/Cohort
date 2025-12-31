@@ -33,7 +33,10 @@ public sealed class EngineIpcService : BackgroundService
         _ipcSettings = new IpcSettings(
             Transport: Enum.TryParse<IpcTransport>(config["Ipc:Transport"], ignoreCase: true, out var t) ? t : IpcTransport.Auto,
             UnixSocketDir: config["Ipc:UnixSocketDir"] ?? "/tmp/cohort",
-            NamedPipePrefix: config["Ipc:NamedPipePrefix"] ?? "cohort"
+            NamedPipePrefix: config["Ipc:NamedPipePrefix"] ?? "cohort",
+            TcpHost: config["Ipc:TcpHost"] ?? "127.0.0.1",
+            TcpGatewayToEnginePort: int.TryParse(config["Ipc:TcpGatewayToEnginePort"], out var p1) ? p1 : 27500,
+            TcpEngineToGatewayPort: int.TryParse(config["Ipc:TcpEngineToGatewayPort"], out var p2) ? p2 : 27501
         );
     }
 

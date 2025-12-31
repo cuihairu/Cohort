@@ -40,7 +40,8 @@
 - [x] 提供 InProc bus（进程内）
 - [x] 提供 NamedPipe bus（本机 IPC 示例）
 - [x] 提供 Unix Domain Socket bus（本机 IPC 示例）
-- [ ] 提供 TCP/HTTP transport（localhost / 远程）
+- [x] 提供 TCP transport（localhost / 容器）
+- [ ] 提供 HTTP transport（远程 / 网关层）
 - [ ] 评估并规划共享内存 transport（MemoryMappedFile + FlatBuffers）
 
 ## 3.6 拆分模式（Gateway + EngineHost）

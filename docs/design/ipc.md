@@ -26,7 +26,7 @@ title: 通信抽象（进程内/进程间）
 
 1. **进程内队列（Channel）**：最快、最可靠（Monolith 默认）
 2. **本机 IPC（Unix Domain Socket / NamedPipe）**：跨进程但仍是本机，运维简单
-3. **localhost TCP**：跨进程/跨容器更通用
+3. **localhost TCP**：跨进程/跨容器更通用（拆分到容器/多主机前的过渡方案）
 4. **远程 TCP/消息队列**：多机部署
 5. **共享内存（MemoryMappedFile + RingBuffer + FlatBuffers）**：吞吐最高，但实现与调试成本最大（建议在有明确性能瓶颈后再上）
 
@@ -37,6 +37,7 @@ title: 通信抽象（进程内/进程间）
   - `InProcMessageBus`：进程内队列
   - `NamedPipeMessageBus`：本机进程间 IPC（Windows 友好）
   - `UnixDomainSocketMessageBus`：本机进程间 IPC（Linux/macOS，Windows 在较新版本也支持 AF_UNIX；实际落地建议保留 fallback）
+  - `TcpMessageBus`：localhost TCP（更容易跨容器/跨网络命名空间）
 
 ## 关于 Windows “支持 Unix Socket”
 
@@ -45,3 +46,18 @@ Windows 的 AF_UNIX（Unix Domain Socket）支持在系统版本与运行环境�
 - 默认策略：**只要运行环境支持 UDS，就用 UDS**
 - 仅在以下情况降级：运行环境不支持或 UDS 绑定/连接失败（例如老系统、路径/权限限制）
   - 降级到：NamedPipe（Windows 原生且成熟）
+
+## Transport 选择与配置
+
+在 `Ipc:Transport` 上提供手动选择，以便兼容“单进程/拆分进程/拆分容器”的不同部署形态：
+
+- `Auto`：优先 UDS（可用则用），失败/不支持时降级到 NamedPipe
+- `UnixDomainSocket`：强制 UDS
+- `NamedPipe`：强制 NamedPipe
+- `Tcp`：强制 localhost TCP（需要固定端口配置，适合拆分到容器或需要显式端口映射的场景）
+
+TCP 模式新增配置项（两端都要一致）：
+
+- `Ipc:TcpHost`：默认 `127.0.0.1`
+- `Ipc:TcpGatewayToEnginePort`：Gateway -> Engine（命令通道）监听端口，默认 `27500`
+- `Ipc:TcpEngineToGatewayPort`：Engine -> Gateway（事件/快照通道）监听端口，默认 `27501`

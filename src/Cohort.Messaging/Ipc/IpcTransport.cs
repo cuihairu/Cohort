@@ -5,5 +5,5 @@ public enum IpcTransport
     Auto = 0,
     UnixDomainSocket = 1,
     NamedPipe = 2,
+    Tcp = 3,
 }
-

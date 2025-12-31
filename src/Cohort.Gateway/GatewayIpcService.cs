@@ -25,7 +25,10 @@ public sealed class GatewayIpcService : BackgroundService
         _ipcSettings = new IpcSettings(
             Transport: Enum.TryParse<IpcTransport>(_config["Ipc:Transport"], ignoreCase: true, out var t) ? t : IpcTransport.Auto,
             UnixSocketDir: _config["Ipc:UnixSocketDir"] ?? "/tmp/cohort",
-            NamedPipePrefix: _config["Ipc:NamedPipePrefix"] ?? "cohort"
+            NamedPipePrefix: _config["Ipc:NamedPipePrefix"] ?? "cohort",
+            TcpHost: _config["Ipc:TcpHost"] ?? "127.0.0.1",
+            TcpGatewayToEnginePort: int.TryParse(_config["Ipc:TcpGatewayToEnginePort"], out var p1) ? p1 : 27500,
+            TcpEngineToGatewayPort: int.TryParse(_config["Ipc:TcpEngineToGatewayPort"], out var p2) ? p2 : 27501
         );
     }
 
