@@ -25,7 +25,7 @@ title: 通信抽象（进程内/进程间）
 按“实现复杂度 vs 性能收益”建议分层（你提到的顺序也合理）：
 
 1. **进程内队列（Channel）**：最快、最可靠（Monolith 默认）
-2. **本机 IPC（NamedPipe / Unix Domain Socket）**：跨进程但仍是本机，运维简单
+2. **本机 IPC（Unix Domain Socket / NamedPipe）**：跨进程但仍是本机，运维简单
 3. **localhost TCP**：跨进程/跨容器更通用
 4. **远程 TCP/消息队列**：多机部署
 5. **共享内存（MemoryMappedFile + RingBuffer + FlatBuffers）**：吞吐最高，但实现与调试成本最大（建议在有明确性能瓶颈后再上）
@@ -35,5 +35,12 @@ title: 通信抽象（进程内/进程间）
 - v1 目前的 Cohort 是 Monolith（同进程内存通信）
 - 同时开始引入 `Cohort.Messaging` 作为“channel 抽象”的起点：
   - `InProcMessageBus`：进程内队列
-  - `NamedPipeMessageBus`：本机进程间 IPC（用于后续拆分成 Gateway/Engine）
+  - `NamedPipeMessageBus`：本机进程间 IPC（Windows 友好）
+  - `UnixDomainSocketMessageBus`：本机进程间 IPC（Linux/macOS，Windows 在较新版本也支持 AF_UNIX；实际落地建议保留 fallback）
 
+## 关于 Windows “支持 Unix Socket”
+
+Windows 的 AF_UNIX 支持在系统版本与运行环境（例如容器、权限、路径规则）上仍有差异；因此框架层面建议：
+
+- 优先：Linux/macOS 使用 Unix Domain Socket
+- Windows：默认 NamedPipe，提供 UDS 作为可选项
