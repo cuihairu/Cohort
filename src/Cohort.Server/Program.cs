@@ -7,12 +7,23 @@ using Cohort.Protocol.Messages;
 using Cohort.Protocol.Models;
 using Cohort.Server;
 using Cohort.SampleGame;
+using Cohort.Adapters.Abstractions;
+using Cohort.Server.Ingress;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IGameModuleFactory, SampleGameModuleFactory>();
 builder.Services.AddSingleton(new SessionConfig());
 builder.Services.AddSingleton<SessionManager>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IPlatformEventVerifier, AllowAllPlatformEventVerifier>();
+builder.Services.AddSingleton<IPlatformEventMapper, TestPlatformEventMapper>();
+builder.Services.AddSingleton(sp =>
+{
+    var ttlSeconds = sp.GetRequiredService<IConfiguration>().GetValue("Ingress:DedupTtlSeconds", 600);
+    return new EventDeduplicator(sp.GetRequiredService<IMemoryCache>(), TimeSpan.FromSeconds(ttlSeconds));
+});
 
 var app = builder.Build();
 app.UseWebSockets();
@@ -21,27 +32,47 @@ app.MapGet("/", () => new { name = "Cohort", ok = true });
 app.MapGet("/health", () => Results.Ok());
 app.MapGet("/sessions", (SessionManager sessions) => sessions.GetDiagnostics());
 
-app.MapPost("/ingress/test", async (IngressTestRequest req, SessionManager sessions) =>
+app.MapPost("/ingress/{platform}", async (
+    HttpContext context,
+    string platform,
+    SessionManager sessions,
+    IPlatformEventVerifier verifier,
+    IEnumerable<IPlatformEventMapper> mappers,
+    EventDeduplicator dedup) =>
 {
-    var sessionId = string.IsNullOrWhiteSpace(req.SessionId) ? sessions.CreateSessionId() : req.SessionId;
-    var session = sessions.GetOrCreate(sessionId);
+    using var reader = new StreamReader(context.Request.Body);
+    var raw = await reader.ReadToEndAsync(context.RequestAborted);
+
+    var headers = context.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+    if (!verifier.Verify(platform, raw, headers))
+    {
+        return Results.Unauthorized();
+    }
 
     var ingestTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-    var ev = new AudienceEvent(
-        EventId: req.EventId ?? $"test:{Guid.NewGuid():N}",
-        Platform: req.Platform ?? "test",
-        SessionId: sessionId,
-        UserId: req.UserId ?? "anonymous",
-        Kind: req.Kind ?? AudienceEventKind.Comment,
-        IngestTimeMs: ingestTimeMs,
-        Text: req.Text,
-        GiftId: req.GiftId,
-        GiftCount: req.GiftCount,
-        GiftValue: req.GiftValue
-    );
+    AudienceEvent? ev = null;
+    foreach (var mapper in mappers)
+    {
+        ev = mapper.TryMap(platform, raw, ingestTimeMs);
+        if (ev != null)
+        {
+            break;
+        }
+    }
 
+    if (ev == null)
+    {
+        return Results.BadRequest(new { error = "unmapped_event", platform });
+    }
+
+    if (!dedup.TryMark(ev.Platform, ev.EventId))
+    {
+        return Results.Ok(new { ok = true, duplicated = true, sessionId = ev.SessionId, eventId = ev.EventId });
+    }
+
+    var session = sessions.GetOrCreate(ev.SessionId);
     await session.IngestAudienceEventAsync(ev);
-    return Results.Ok(new { sessionId, eventId = ev.EventId, tick = session.TickId });
+    return Results.Ok(new { ok = true, sessionId = ev.SessionId, eventId = ev.EventId, tick = session.TickId });
 });
 
 app.Map("/ws", async context =>
@@ -134,15 +165,3 @@ app.Map("/ws", async context =>
 });
 
 app.Run();
-
-internal sealed record IngressTestRequest(
-    string? SessionId,
-    string? Platform,
-    string? EventId,
-    string? UserId,
-    AudienceEventKind? Kind,
-    string? Text,
-    string? GiftId,
-    int? GiftCount,
-    int? GiftValue
-);

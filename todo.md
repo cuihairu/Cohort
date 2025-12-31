@@ -24,9 +24,9 @@
 
 ## 2. 平台接入（开源只做接口与最小 stub）
 
-- [ ] `IPlatformAdapter` / `IPlatformEventVerifier` 接口
-- [ ] `Platform Ingress`：HTTP endpoint 接收 event（示例 payload + 验签 stub）
-- [ ] 去重机制（基于 platformEventId + TTL）
+- [x] `IPlatformEventMapper` / `IPlatformEventVerifier` 接口
+- [x] `Platform Ingress`：HTTP endpoint 接收 event（示例 payload + 验签 stub）
+- [x] 去重机制（基于 platformEventId + TTL）
 
 ## 3. Match/阵营对抗抽象
 

@@ -48,6 +48,11 @@ dotnet run --project src/Cohort.Server
 curl -X POST http://localhost:5000/ingress/test \
   -H 'content-type: application/json' \
   -d '{"sessionId":"<sessionId>","platform":"test","userId":"u1","kind":"Like"}'
+
+说明：
+
+- v1 统一入口：`POST /ingress/{platform}`
+- `test` 平台示例：`POST /ingress/test`，body 需包含 `sessionId`
 ```
 
 ## 构建文档站（静态页面）
@@ -58,4 +63,3 @@ npm run docs:build
 ```
 
 产物目录：`docs/.vuepress/dist`
-

@@ -8,6 +8,10 @@ title: 运维与观测
 
 - `GET /sessions`：返回会话与客户端指标（tick、事件计数、lag、ack age、resync 次数）
 
+## Ingress（平台事件入口）
+
+- `POST /ingress/{platform}`：统一平台事件入口（当前提供 `test` 示例 mapper）
+
 ## CI / 覆盖率
 
 - GitHub Actions：`.github/workflows/ci.yml`
