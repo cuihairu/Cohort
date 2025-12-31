@@ -1,0 +1,9 @@
+namespace Cohort.Messaging.Ipc;
+
+public enum IpcTransport
+{
+    Auto = 0,
+    UnixDomainSocket = 1,
+    NamedPipe = 2,
+}
+

@@ -40,7 +40,8 @@ title: 通信抽象（进程内/进程间）
 
 ## 关于 Windows “支持 Unix Socket”
 
-Windows 的 AF_UNIX 支持在系统版本与运行环境（例如容器、权限、路径规则）上仍有差异；因此框架层面建议：
+Windows 的 AF_UNIX（Unix Domain Socket）支持在系统版本与运行环境（例如容器、权限、路径规则）上仍有差异；因此框架层面建议：
 
-- 优先：Linux/macOS 使用 Unix Domain Socket
-- Windows：默认 NamedPipe，提供 UDS 作为可选项
+- 默认策略：**只要运行环境支持 UDS，就用 UDS**
+- 仅在以下情况降级：运行环境不支持或 UDS 绑定/连接失败（例如老系统、路径/权限限制）
+  - 降级到：NamedPipe（Windows 原生且成熟）

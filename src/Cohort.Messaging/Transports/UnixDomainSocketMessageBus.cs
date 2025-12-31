@@ -16,6 +16,7 @@ public sealed class UnixDomainSocketMessageBus : IMessageBus
     });
 
     private Task? _serverTask;
+    private Socket? _listenSocket;
     private Socket? _clientSocket;
     private NetworkStream? _clientStream;
     private readonly SemaphoreSlim _clientLock = new(1, 1);
@@ -36,29 +37,29 @@ public sealed class UnixDomainSocketMessageBus : IMessageBus
             return;
         }
 
+        if (File.Exists(_socketPath))
+        {
+            try { File.Delete(_socketPath); } catch { }
+        }
+
+        var dir = Path.GetDirectoryName(_socketPath);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        _listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        _listenSocket.Bind(new UnixDomainSocketEndPoint(_socketPath));
+        _listenSocket.Listen(backlog);
+
         _serverTask = Task.Run(async () =>
         {
-            if (File.Exists(_socketPath))
-            {
-                try { File.Delete(_socketPath); } catch { }
-            }
-
-            var dir = Path.GetDirectoryName(_socketPath);
-            if (!string.IsNullOrEmpty(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-
-            using var listen = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            listen.Bind(new UnixDomainSocketEndPoint(_socketPath));
-            listen.Listen(backlog);
-
             while (!_cts.IsCancellationRequested)
             {
                 Socket? accepted = null;
                 try
                 {
-                    accepted = await listen.AcceptAsync(_cts.Token);
+                    accepted = await _listenSocket.AcceptAsync(_cts.Token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -150,6 +151,15 @@ public sealed class UnixDomainSocketMessageBus : IMessageBus
             try { await t; } catch { }
         }
 
+        try
+        {
+            _listenSocket?.Dispose();
+            _listenSocket = null;
+        }
+        catch
+        {
+        }
+
         await _clientLock.WaitAsync();
         try
         {
@@ -167,4 +177,3 @@ public sealed class UnixDomainSocketMessageBus : IMessageBus
         _cts.Dispose();
     }
 }
-
