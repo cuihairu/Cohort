@@ -10,17 +10,114 @@ title: 协议参考
 {"type":"hello","sessionId":"optional","clientId":"optional"}
 ```
 
+字段说明：
+
+- `sessionId`：客户端希望加入的会话，可选
+- `clientId`：客户端标识，可选；未提供时可由服务端分配
+
 ## welcome（server -> client）
 
-字段说明：`tickDurationMs`、`inputDelayTicks`、`snapshotEveryTicks`。
+```json
+{
+  "type":"welcome",
+  "sessionId":"session-1",
+  "clientId":"client-1",
+  "tickDurationMs":66,
+  "inputDelayTicks":3,
+  "snapshotEveryTicks":2,
+  "serverTimeMs":1710000000000
+}
+```
+
+字段说明：
+
+- `tickDurationMs`：权威 tick 周期
+- `inputDelayTicks`：输入被调度到未来多少 tick 后结算
+- `snapshotEveryTicks`：周期快照频率
+- `serverTimeMs`：服务端当前时间戳，可用于客户端做漂移估计
+
+客户端在收到 `welcome` 后，应以其作为权威节拍配置，而不是继续沿用本地默认值。
 
 ## snapshot（server -> client）
 
-当 `forced=true && reason="lag"` 时表示服务器判定客户端落后，需要立刻以该快照对齐。
+```json
+{
+  "type":"snapshot",
+  "sessionId":"session-1",
+  "tickId":123,
+  "serverTimeMs":1710000000123,
+  "state": {},
+  "forced":true,
+  "reason":"lag",
+  "targetClientId":"client-1",
+  "clientLagTicks":9,
+  "clientLastAckTickId":114
+}
+```
+
+字段说明：
+
+- `tickId`：该快照对应的权威 tick
+- `serverTimeMs`：快照生成时的服务端时间
+- `state`：权威状态快照，v1 为 JSON
+- `forced`：是否为强制重同步快照
+- `reason`：强制原因，当前常见值为 `lag`
+- `targetClientId`：目标客户端；当服务端只想让特定慢端立即对齐时使用
+- `clientLagTicks`：服务端判定该客户端当前落后多少 tick
+- `clientLastAckTickId`：服务端看到的该客户端最近 ACK tick
+
+语义说明：
+
+- 普通周期快照用于稳定跟随和重连恢复
+- 当 `forced=true && reason="lag"` 时，表示服务器判定客户端落后，需要立刻以该快照对齐
+- 客户端收到强制快照后，不应继续长时间补历史帧，而应优先切换到该快照状态
 
 ## ack（client -> server）
 
 ```json
-{"type":"ack","sessionId":"...","clientId":"...","lastAppliedTickId":123}
+{
+  "type":"ack",
+  "sessionId":"session-1",
+  "clientId":"client-1",
+  "lastAppliedTickId":123,
+  "clientTimeMs":1710000000999
+}
 ```
 
+字段说明：
+
+- `lastAppliedTickId`：客户端已经真正应用完成的权威 tick
+- `clientTimeMs`：可选，用于辅助漂移和排查
+
+语义约束：
+
+- ACK 只能在状态真正应用完成后发送
+- ACK 不能表示“已经收到消息”
+- ACK 不能表示“已入队，稍后应用”
+
+如果客户端在快照还未应用完成前就发送 ACK，服务端会误判其已经跟上。
+
+## 推荐实现约束
+
+- 客户端正常跟随时，应周期性发送 ACK
+- 轻度 lag 时，可做受控追赶
+- 重度 lag 时，应等待或请求最新快照
+- 客户端逻辑层应始终以 `tickId` 和权威快照为准
+
+## 与当前服务端实现的对应关系
+
+当前服务端实现中：
+
+- `welcome` 对应 `ServerWelcome`
+- `snapshot` 对应 `ServerSnapshot`
+- `ack` 对应 `ClientAck`
+
+其中服务端强制重同步所携带的关键上下文字段包括：
+
+- `forced`
+- `reason`
+- `targetClientId`
+- `clientLagTicks`
+- `clientLastAckTickId`
+
+客户端如果要做可解释的恢复日志，建议把这些字段一起记录下来。

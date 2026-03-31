@@ -16,11 +16,19 @@ module.exports = {
       "/design/": [
         "/design/architecture.md",
         "/design/frame-sync.md",
+        "/design/frame-sync-best-practices.md",
+        "/design/client-resync-state-machine.md",
         "/design/ipc.md",
         "/design/spec.md",
         "/design/legacy-real-server-analysis.md"
       ],
-      "/reference/": ["/reference/protocol.md", "/reference/config.md", "/reference/operations.md"]
+      "/reference/": [
+        "/reference/protocol.md",
+        "/reference/config.md",
+        "/reference/operations.md",
+        "/reference/tuning.md",
+        "/reference/troubleshooting.md"
+      ]
     }
   },
   plugins: ["mermaidjs"]

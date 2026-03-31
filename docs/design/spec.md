@@ -91,3 +91,14 @@ title: 规格草案
 ## 4. 客户端协议（v1）
 
 见：`/reference/protocol.html`
+
+## 5. 推荐阅读顺序
+
+如果你正在处理“不同步、追帧不稳定、慢端恢复困难”等问题，建议按下面顺序阅读：
+
+1. [整体架构](./architecture.md)
+2. [帧同步设计](./frame-sync.md)
+3. [帧同步最佳实践](./frame-sync-best-practices.md)
+4. [客户端追同步状态机](./client-resync-state-machine.md)
+5. [参数调优](../reference/tuning.md)
+6. [旧服问题分析](./legacy-real-server-analysis.md)

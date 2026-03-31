@@ -4,9 +4,43 @@ title: 运维与观测
 
 # 运维与观测
 
+相关文档：
+
+- [参数调优](./tuning.md)
+- [故障排查](./troubleshooting.md)
+- [帧同步最佳实践](../design/frame-sync-best-practices.md)
+- [客户端追同步状态机](../design/client-resync-state-machine.md)
+
 ## 指标端点
 
 - `GET /sessions`：返回会话与客户端指标（tick、事件计数、lag、ack age、resync 次数）
+
+关键字段对应当前 `SessionDiagnostics` / `SessionClientDiagnostics`：
+
+- `sessionId`
+- `tickId`
+- `tickDurationMs`
+- `serverTimeMs`
+- `totalIngestedEvents`
+- `totalAppliedEvents`
+- `totalDroppedEvents`
+- `totalSnapshotsSent`
+- `totalResyncSnapshotsSent`
+- `lastTickProcessMs`
+- `clients[].clientId`
+- `clients[].connectedTickId`
+- `clients[].lastAckTickId`
+- `clients[].lagTicks`
+- `clients[].lastAckAgeMs`
+- `clients[].resyncCount`
+- `clients[].lastResyncAgeMs`
+
+排障时优先关注：
+
+- `lastTickProcessMs` 是否逼近 `tickDurationMs`
+- `clients[].lagTicks` 是否持续增长
+- `clients[].lastAckAgeMs` 是否异常升高
+- `totalDroppedEvents` 是否在高峰期快速增加
 
 ## Ingress（平台事件入口）
 
@@ -25,3 +59,9 @@ title: 运维与观测
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+## 关联文档
+
+- [故障排查](./troubleshooting.md)
+- [参数调优](./tuning.md)
+- [协议参考](./protocol.md)
