@@ -14,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IPlatformEventVerifier, AllowAllPlatformEventVerifier>();
 builder.Services.AddSingleton<IPlatformEventMapper, TestPlatformEventMapper>();
+builder.Services.AddSingleton<IAudienceFactionRule>(_ =>
+    new KeywordGiftAudienceFactionRule(
+        commentKeywords: BuildFactionMap(builder.Configuration.GetSection("Ingress:FactionRules:CommentKeywords")),
+        giftIds: BuildFactionMap(builder.Configuration.GetSection("Ingress:FactionRules:GiftIds"))));
 builder.Services.AddSingleton(sp =>
 {
     var ttlSeconds = sp.GetRequiredService<IConfiguration>().GetValue("Ingress:DedupTtlSeconds", 600);
@@ -35,6 +39,7 @@ app.MapPost("/ingress/{platform}", async (
     GatewayIpcService ipc,
     IPlatformEventVerifier verifier,
     IEnumerable<IPlatformEventMapper> mappers,
+    IAudienceFactionRule factionRule,
     EventDeduplicator dedup) =>
 {
     using var reader = new StreamReader(context.Request.Body);
@@ -61,6 +66,8 @@ app.MapPost("/ingress/{platform}", async (
     {
         return Results.BadRequest(new { error = "unmapped_event", platform });
     }
+
+    ev = factionRule.Apply(ev);
 
     if (!dedup.TryMark(ev.Platform, ev.EventId))
     {
@@ -182,3 +189,10 @@ app.Map("/ws", async context =>
 });
 
 app.Run();
+
+static IReadOnlyDictionary<string, string> BuildFactionMap(IConfigurationSection section)
+{
+    return section.GetChildren()
+        .Where(x => !string.IsNullOrWhiteSpace(x.Key) && !string.IsNullOrWhiteSpace(x.Value))
+        .ToDictionary(x => x.Key, x => x.Value!, StringComparer.OrdinalIgnoreCase);
+}

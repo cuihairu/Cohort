@@ -16,9 +16,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IGameModuleFactory, SampleGameModuleFactory>();
 builder.Services.AddSingleton(new SessionConfig());
 builder.Services.AddSingleton<SessionManager>();
+builder.Services.AddSingleton<MatchRegistry>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IPlatformEventVerifier, AllowAllPlatformEventVerifier>();
 builder.Services.AddSingleton<IPlatformEventMapper, TestPlatformEventMapper>();
+builder.Services.AddSingleton<IAudienceFactionRule>(_ =>
+    new KeywordGiftAudienceFactionRule(
+        commentKeywords: BuildFactionMap(builder.Configuration.GetSection("Ingress:FactionRules:CommentKeywords")),
+        giftIds: BuildFactionMap(builder.Configuration.GetSection("Ingress:FactionRules:GiftIds"))));
 builder.Services.AddSingleton(sp =>
 {
     var ttlSeconds = sp.GetRequiredService<IConfiguration>().GetValue("Ingress:DedupTtlSeconds", 600);
@@ -31,13 +36,16 @@ app.UseWebSockets();
 app.MapGet("/", () => new { name = "Cohort", ok = true });
 app.MapGet("/health", () => Results.Ok());
 app.MapGet("/sessions", (SessionManager sessions) => sessions.GetDiagnostics());
+app.MapGet("/matches", (MatchRegistry matches) => matches.GetDiagnostics());
 
 app.MapPost("/ingress/{platform}", async (
     HttpContext context,
     string platform,
     SessionManager sessions,
+    MatchRegistry matches,
     IPlatformEventVerifier verifier,
     IEnumerable<IPlatformEventMapper> mappers,
+    IAudienceFactionRule factionRule,
     EventDeduplicator dedup) =>
 {
     using var reader = new StreamReader(context.Request.Body);
@@ -65,12 +73,15 @@ app.MapPost("/ingress/{platform}", async (
         return Results.BadRequest(new { error = "unmapped_event", platform });
     }
 
+    ev = factionRule.Apply(ev);
+
     if (!dedup.TryMark(ev.Platform, ev.EventId))
     {
         return Results.Ok(new { ok = true, duplicated = true, sessionId = ev.SessionId, eventId = ev.EventId });
     }
 
     var session = sessions.GetOrCreate(ev.SessionId);
+    matches.Track(ev);
     await session.IngestAudienceEventAsync(ev);
     return Results.Ok(new { ok = true, sessionId = ev.SessionId, eventId = ev.EventId, tick = session.TickId });
 });
@@ -165,3 +176,10 @@ app.Map("/ws", async context =>
 });
 
 app.Run();
+
+static IReadOnlyDictionary<string, string> BuildFactionMap(IConfigurationSection section)
+{
+    return section.GetChildren()
+        .Where(x => !string.IsNullOrWhiteSpace(x.Key) && !string.IsNullOrWhiteSpace(x.Value))
+        .ToDictionary(x => x.Key, x => x.Value!, StringComparer.OrdinalIgnoreCase);
+}

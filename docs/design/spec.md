@@ -47,6 +47,12 @@ title: 规格草案
 - `Faction`：阵营（通常与主播绑定）。
 - `Audience`：观众玩家（平台 userId）。
 
+当前仓库中的最小落地方式：
+
+- `AudienceEvent` 可携带 `matchId` / `factionId`
+- ingress 可通过显式字段或 `Ingress:FactionRules` 中的“弹幕口令/礼物 ID -> 阵营”规则补全 `factionId`
+- `SampleGameModuleFactory` 创建的多个 session 模块共享同一个 match 级状态仓库，因此相同 `matchId` 的 session 会看到同一份局内聚合视图
+
 ## 3. 帧同步设计（v1：服务器权威 tick + 快照）
 
 关键原则：**服务器永远推进，不为慢端暂停；慢端用快照追赶。**

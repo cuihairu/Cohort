@@ -18,6 +18,7 @@ public sealed record AudienceEvent(
     string? Text = null,
     string? GiftId = null,
     int? GiftCount = null,
-    int? GiftValue = null
+    int? GiftValue = null,
+    string? MatchId = null,
+    string? FactionId = null
 );
-

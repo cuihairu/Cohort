@@ -52,6 +52,18 @@ public sealed class TestPlatformEventMapper : IPlatformEventMapper
         int? giftCount = root.TryGetProperty("giftCount", out var giftCountEl) && giftCountEl.TryGetInt32(out var gc) ? gc : null;
         int? giftValue = root.TryGetProperty("giftValue", out var giftValueEl) && giftValueEl.TryGetInt32(out var gv) ? gv : null;
 
+        var matchId = root.TryGetProperty("matchId", out var matchIdEl) ? matchIdEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(matchId))
+        {
+            matchId = null;
+        }
+
+        var factionId = root.TryGetProperty("factionId", out var factionIdEl) ? factionIdEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(factionId))
+        {
+            factionId = null;
+        }
+
         return new AudienceEvent(
             EventId: eventId,
             Platform: "test",
@@ -62,8 +74,9 @@ public sealed class TestPlatformEventMapper : IPlatformEventMapper
             Text: text,
             GiftId: giftId,
             GiftCount: giftCount,
-            GiftValue: giftValue
+            GiftValue: giftValue,
+            MatchId: matchId,
+            FactionId: factionId
         );
     }
 }
-

@@ -7,6 +7,7 @@ public sealed record SessionDiagnostics(
     long ServerTimeMs,
     long TotalIngestedEvents,
     long TotalAppliedEvents,
+    long TotalMergedEvents,
     long TotalDroppedEvents,
     long TotalSnapshotsSent,
     long TotalResyncSnapshotsSent,
@@ -23,4 +24,3 @@ public sealed record SessionClientDiagnostics(
     long ResyncCount,
     long LastResyncAgeMs
 );
-

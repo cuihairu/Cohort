@@ -2,8 +2,13 @@ using Cohort.Protocol.Models;
 
 namespace Cohort.Engine.Session;
 
+public sealed record AudienceEventReduceResult(
+    IReadOnlyList<AudienceEvent> Events,
+    int MergedInputEvents,
+    int DroppedInputEvents
+);
+
 public interface IAudienceEventReducer
 {
-    IReadOnlyList<AudienceEvent> Reduce(IReadOnlyList<AudienceEvent> events, int maxEventsPerTick);
+    AudienceEventReduceResult Reduce(IReadOnlyList<AudienceEvent> events, int maxEventsPerTick);
 }
-

@@ -6,4 +6,5 @@ public enum IpcTransport
     UnixDomainSocket = 1,
     NamedPipe = 2,
     Tcp = 3,
+    Http = 4,
 }

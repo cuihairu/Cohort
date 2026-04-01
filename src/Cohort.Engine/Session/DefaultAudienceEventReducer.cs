@@ -4,27 +4,31 @@ namespace Cohort.Engine.Session;
 
 public sealed class DefaultAudienceEventReducer : IAudienceEventReducer
 {
-    public IReadOnlyList<AudienceEvent> Reduce(IReadOnlyList<AudienceEvent> events, int maxEventsPerTick)
+    public AudienceEventReduceResult Reduce(IReadOnlyList<AudienceEvent> events, int maxEventsPerTick)
     {
         if (maxEventsPerTick <= 0 || events.Count <= maxEventsPerTick)
         {
-            return events;
+            return new AudienceEventReduceResult(events, MergedInputEvents: 0, DroppedInputEvents: 0);
         }
 
         var likesByUser = new Dictionary<string, int>(StringComparer.Ordinal);
         var giftsByUserGift = new Dictionary<(string UserId, string GiftId), (int Count, int Value)>();
         var comments = new List<AudienceEvent>(capacity: Math.Min(events.Count, maxEventsPerTick));
         var passthrough = new List<AudienceEvent>();
+        var likeEventCount = 0;
+        var giftEventCount = 0;
 
         foreach (var e in events)
         {
             switch (e.Kind)
             {
                 case AudienceEventKind.Like:
+                    likeEventCount++;
                     likesByUser[e.UserId] = likesByUser.TryGetValue(e.UserId, out var c) ? c + 1 : 1;
                     break;
                 case AudienceEventKind.Gift:
                     {
+                        giftEventCount++;
                         var giftId = e.GiftId ?? "unknown";
                         var giftCount = e.GiftCount ?? 1;
                         var giftValue = e.GiftValue ?? 0;
@@ -49,13 +53,16 @@ public sealed class DefaultAudienceEventReducer : IAudienceEventReducer
         }
 
         var reduced = new List<AudienceEvent>(capacity: maxEventsPerTick);
+        var firstEvent = events[0];
+        var mergedInputEvents = Math.Max(0, likeEventCount - likesByUser.Count)
+            + Math.Max(0, giftEventCount - giftsByUserGift.Count);
 
         foreach (var e in passthrough)
         {
             reduced.Add(e);
             if (reduced.Count >= maxEventsPerTick)
             {
-                return reduced;
+                return BuildResult(events.Count, reduced, mergedInputEvents);
             }
         }
 
@@ -64,17 +71,19 @@ public sealed class DefaultAudienceEventReducer : IAudienceEventReducer
             reduced.Add(new AudienceEvent(
                 EventId: $"merged:gift:{kv.Key.UserId}:{kv.Key.GiftId}:{Guid.NewGuid():N}",
                 Platform: "merged",
-                SessionId: events[0].SessionId,
+                SessionId: firstEvent.SessionId,
                 UserId: kv.Key.UserId,
                 Kind: AudienceEventKind.Gift,
-                IngestTimeMs: events[0].IngestTimeMs,
+                IngestTimeMs: firstEvent.IngestTimeMs,
                 GiftId: kv.Key.GiftId,
                 GiftCount: kv.Value.Count,
-                GiftValue: kv.Value.Value
+                GiftValue: kv.Value.Value,
+                MatchId: firstEvent.MatchId,
+                FactionId: firstEvent.FactionId
             ));
             if (reduced.Count >= maxEventsPerTick)
             {
-                return reduced;
+                return BuildResult(events.Count, reduced, mergedInputEvents);
             }
         }
 
@@ -83,15 +92,17 @@ public sealed class DefaultAudienceEventReducer : IAudienceEventReducer
             reduced.Add(new AudienceEvent(
                 EventId: $"merged:like:{kv.Key}:{Guid.NewGuid():N}",
                 Platform: "merged",
-                SessionId: events[0].SessionId,
+                SessionId: firstEvent.SessionId,
                 UserId: kv.Key,
                 Kind: AudienceEventKind.Like,
-                IngestTimeMs: events[0].IngestTimeMs,
-                Text: kv.Value.ToString()
+                IngestTimeMs: firstEvent.IngestTimeMs,
+                Text: kv.Value.ToString(),
+                MatchId: firstEvent.MatchId,
+                FactionId: firstEvent.FactionId
             ));
             if (reduced.Count >= maxEventsPerTick)
             {
-                return reduced;
+                return BuildResult(events.Count, reduced, mergedInputEvents);
             }
         }
 
@@ -100,11 +111,16 @@ public sealed class DefaultAudienceEventReducer : IAudienceEventReducer
             reduced.Add(e);
             if (reduced.Count >= maxEventsPerTick)
             {
-                return reduced;
+                return BuildResult(events.Count, reduced, mergedInputEvents);
             }
         }
 
-        return reduced;
+        return BuildResult(events.Count, reduced, mergedInputEvents);
+    }
+
+    private static AudienceEventReduceResult BuildResult(int inputCount, IReadOnlyList<AudienceEvent> reduced, int mergedInputEvents)
+    {
+        var droppedInputEvents = Math.Max(0, inputCount - mergedInputEvents - reduced.Count);
+        return new AudienceEventReduceResult(reduced, mergedInputEvents, droppedInputEvents);
     }
 }
-

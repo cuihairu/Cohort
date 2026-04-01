@@ -55,9 +55,15 @@ Windows 的 AF_UNIX（Unix Domain Socket）支持在系统版本与运行环境�
 - `UnixDomainSocket`：强制 UDS
 - `NamedPipe`：强制 NamedPipe
 - `Tcp`：强制 localhost TCP（需要固定端口配置，适合拆分到容器或需要显式端口映射的场景）
+- `Http`：强制 HTTP 单向投递（更适合远程网关层、反向代理、跨主机简单联通）
 
 TCP 模式新增配置项（两端都要一致）：
 
 - `Ipc:TcpHost`：默认 `127.0.0.1`
 - `Ipc:TcpGatewayToEnginePort`：Gateway -> Engine（命令通道）监听端口，默认 `27500`
 - `Ipc:TcpEngineToGatewayPort`：Engine -> Gateway（事件/快照通道）监听端口，默认 `27501`
+
+HTTP 模式新增配置项（两端都要一致）：
+
+- `Ipc:HttpGatewayToEngineUrl`：Gateway -> Engine（命令通道）接收地址，默认 `http://127.0.0.1:27600/gw-to-eng/`
+- `Ipc:HttpEngineToGatewayUrl`：Engine -> Gateway（事件/快照通道）接收地址，默认 `http://127.0.0.1:27601/eng-to-gw/`

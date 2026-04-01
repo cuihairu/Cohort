@@ -8,8 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Cohort.Adapters.Abstractions\Cohort.Adapters.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Cohort.Engine\Cohort.Engine.csproj" />
+    <ProjectReference Include="..\..\src\Cohort.Gateway\Cohort.Gateway.csproj" />
     <ProjectReference Include="..\..\src\Cohort.Protocol\Cohort.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\Cohort.SampleGame\Cohort.SampleGame.csproj" />
+    <ProjectReference Include="..\..\src\Cohort.Server\Cohort.Server.csproj" />
     <ProjectReference Include="..\..\src\Cohort.Messaging\Cohort.Messaging.csproj" />
   </ItemGroup>
 

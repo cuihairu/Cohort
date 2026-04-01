@@ -29,6 +29,7 @@ public sealed class SessionActor : IAsyncDisposable
 
     private long _totalIngestedEvents;
     private long _totalAppliedEvents;
+    private long _totalMergedEvents;
     private long _totalDroppedEvents;
     private long _totalSnapshotsSent;
     private long _totalResyncSnapshotsSent;
@@ -63,6 +64,7 @@ public sealed class SessionActor : IAsyncDisposable
             ServerTimeMs: NowMs(),
             TotalIngestedEvents: 0,
             TotalAppliedEvents: 0,
+            TotalMergedEvents: 0,
             TotalDroppedEvents: 0,
             TotalSnapshotsSent: 0,
             TotalResyncSnapshotsSent: 0,
@@ -233,12 +235,15 @@ public sealed class SessionActor : IAsyncDisposable
             });
 
             var reduced = _reducer.Reduce(events, _config.MaxEventsPerTick);
-            tickEvents = reduced;
-            Interlocked.Add(ref _totalAppliedEvents, reduced.Count);
-            var dropped = events.Count - reduced.Count;
-            if (dropped > 0)
+            tickEvents = reduced.Events;
+            Interlocked.Add(ref _totalAppliedEvents, reduced.Events.Count);
+            if (reduced.MergedInputEvents > 0)
             {
-                Interlocked.Add(ref _totalDroppedEvents, dropped);
+                Interlocked.Add(ref _totalMergedEvents, reduced.MergedInputEvents);
+            }
+            if (reduced.DroppedInputEvents > 0)
+            {
+                Interlocked.Add(ref _totalDroppedEvents, reduced.DroppedInputEvents);
             }
         }
 
@@ -362,6 +367,7 @@ public sealed class SessionActor : IAsyncDisposable
             ServerTimeMs: now,
             TotalIngestedEvents: Interlocked.Read(ref _totalIngestedEvents),
             TotalAppliedEvents: Interlocked.Read(ref _totalAppliedEvents),
+            TotalMergedEvents: Interlocked.Read(ref _totalMergedEvents),
             TotalDroppedEvents: Interlocked.Read(ref _totalDroppedEvents),
             TotalSnapshotsSent: Interlocked.Read(ref _totalSnapshotsSent),
             TotalResyncSnapshotsSent: Interlocked.Read(ref _totalResyncSnapshotsSent),

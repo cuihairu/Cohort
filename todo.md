@@ -30,9 +30,9 @@
 
 ## 3. Match/阵营对抗抽象
 
-- [ ] `Match` / `Faction` / `Session` 的关系建模
-- [ ] 多客户端订阅同一 `Match` 的状态（两个主播客户端看到同一局）
-- [ ] “观众加入阵营”的通用规则接口（弹幕口令/礼物映射）
+- [x] `Match` / `Faction` / `Session` 的关系建模
+- [x] 多客户端订阅同一 `Match` 的状态（两个主播客户端看到同一局）
+- [x] “观众加入阵营”的通用规则接口（弹幕口令/礼物映射）
 
 ## 3.5 通信与部署模式
 
@@ -41,7 +41,7 @@
 - [x] 提供 NamedPipe bus（本机 IPC 示例）
 - [x] 提供 Unix Domain Socket bus（本机 IPC 示例）
 - [x] 提供 TCP transport（localhost / 容器）
-- [ ] 提供 HTTP transport（远程 / 网关层）
+- [x] 提供 HTTP transport（远程 / 网关层）
 - [ ] 评估并规划共享内存 transport（MemoryMappedFile + FlatBuffers）
 
 ## 3.6 拆分模式（Gateway + EngineHost）

@@ -36,7 +36,9 @@ public sealed class EngineIpcService : BackgroundService
             NamedPipePrefix: config["Ipc:NamedPipePrefix"] ?? "cohort",
             TcpHost: config["Ipc:TcpHost"] ?? "127.0.0.1",
             TcpGatewayToEnginePort: int.TryParse(config["Ipc:TcpGatewayToEnginePort"], out var p1) ? p1 : 27500,
-            TcpEngineToGatewayPort: int.TryParse(config["Ipc:TcpEngineToGatewayPort"], out var p2) ? p2 : 27501
+            TcpEngineToGatewayPort: int.TryParse(config["Ipc:TcpEngineToGatewayPort"], out var p2) ? p2 : 27501,
+            HttpGatewayToEngineUrl: config["Ipc:HttpGatewayToEngineUrl"] ?? "http://127.0.0.1:27600/gw-to-eng/",
+            HttpEngineToGatewayUrl: config["Ipc:HttpEngineToGatewayUrl"] ?? "http://127.0.0.1:27601/eng-to-gw/"
         );
     }
 
